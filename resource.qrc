@@ -1,0 +1,15 @@
+<RCC>
+  <qresource>
+    <file>assets/icons/forward-white.png</file>
+    <file>assets/icons/cancel-white.png</file>
+    <file>assets/icons/save-black.png</file>
+    <file>assets/icons/save-white.png</file>
+    <file>assets/icons/folder-yellow.png</file>
+    <file>assets/icons/play-white.png</file>
+    <file>assets/icons/folder-white.png</file>
+    <file>assets/icons/folder_black.png</file>
+    <file>assets/icons/file-text.svg</file>
+    <file>assets/icons/cancel.png</file>
+    <file>assets/icons/save.png</file>
+  </qresource>
+</RCC>
