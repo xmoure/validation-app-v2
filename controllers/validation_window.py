@@ -1,154 +1,63 @@
 import os
-import subprocess
-import shutil
-import resource_rc
-import csv
 import chess
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QWidget, QMessageBox, QLabel, QVBoxLayout, QDialog
-from PySide6.QtGui import QPixmap
+from PySide6.QtCore import Qt, Signal, QSize, QUrl
+from PySide6.QtWidgets import QWidget, QMessageBox, QLabel, QSizePolicy, QApplication
+from PySide6.QtGui import QPixmap, QMovie, QIcon, QDesktopServices
 from views.validation_window_ui import ValidationWindow
 from chess_game.chessboard import Chessboard
+from database.mongo_db import mongo_db_instance
+from controllers.data_fetcher import DataFetcher
+from controllers.overlay_widget import OverlayWidget
+import tempfile
+import traceback
+from config import get_ssh_details
 
 class ValidationWindowForm(QWidget, ValidationWindow):
-    def __init__(self, parent = None, folder_path = None, destination_folder_path = None) -> None:
+    data_ready = Signal(dict)
+    def __init__(self, parent = None, match_id= '') -> None:
         super().__init__(parent)
         self.setupUi(self)
         self.setWindowTitle('FEN Validation')
         self.generated_fen_text_edit.setEnabled(False)
-        self.initial_fen_details = ''
-        self.new_fen = ''
-        self.csv_file_path= ''
-        self.image_paths = []
-        self.fen_strings = []
-        self.current_index = 0
+        self.current_image_index = 0
         self.main_window = parent
-        self.folder_path =  folder_path
-        self.destination_folder_path = destination_folder_path
+        self.match_id = match_id
+        self.match = {}
+        self.current_image_data = ''
+        self.current_fen = ''
         self.setWindowFlag(Qt.Window)
         self.main_window.hide()
+        self.show_loading()
+        self.overlay = OverlayWidget(self, "Validating...")
+        self.overlay.setGeometry(self.rect())
+        self.overlay.hide()
         self.cancel_validation_btn.clicked.connect(self.close)
-        self.read_csv_and_display_first_element()
-        self.save_validation_btn.clicked.connect(self.validate_and_show_next)
-        self.chess_img_label.clicked.connect(self.show_image_dialog)
-
-    def read_csv_and_display_first_element(self):
-        try:
-            self.csv_file_path = self.find_csv_filename(self.folder_path)
-            with open(self.csv_file_path, mode='r') as file:
-                csv_reader = csv.DictReader(file)
-                for row in csv_reader:
-                    self.image_paths.append(row['file'])
-                    self.fen_strings.append(row['fen'])
-                # After loading, display the first image and FEN if available
-                if self.image_paths and self.fen_strings:
-                    self.initial_fen_details = self.extract_fen_details(self.fen_strings[0])
-                    self.set_image(self.image_paths[0])
-                    self.set_chess_game(self.fen_strings[0])
-                    self.update_image_count_label()
-                    self.update_fen_label(self.fen_strings[0])
-        except Exception as e:
-            print(f"Error: {e}")
-            QMessageBox.critical(self, "Error", e)
-
-    def find_csv_filename(self,directory):
-        csv_files = [f for f in os.listdir(directory) if f.endswith('.csv')]
-        if len(csv_files) == 1:
-            return os.path.join(directory, csv_files[0])
-        elif len(csv_files) > 1:
-            raise Exception("More than one CSV file found in the directory.")
-        else:
-            raise Exception("No CSV files found in the directory.")
+        self.save_validation_btn.clicked.connect(self.on_validate)
+        self.chess_img_label.clicked.connect(self.open_image_with_os_application)
+        self.start_data_fetching(match_id)
 
     def closeEvent(self, event):
         self.main_window.show()
+        self.main_window.load_matches()
         event.accept()
 
-    def set_image(self, image_path):
-        self.chess_img_label.setProperty('image_path', image_path)
-        pixmap = QPixmap(image_path)
-        pixmap = pixmap.scaled(550, 600, Qt.KeepAspectRatio)
-        self.chess_img_label.setPixmap(pixmap)
-        image_name = os.path.basename(image_path)
-        self.imge_label.setText(f"Image {image_name}")
-
-    def set_chess_game(self, starting_fen):
-        self.board = chess.Board(starting_fen)
+    def set_chess_game(self, fen):
+        self.board = chess.Board(fen)
         self.scene = Chessboard(self.board)
         self.chess_graphic_view.setScene(self.scene)
         self.scene.fenUpdated.connect(self.update_fen_label)
         self.scene.render()
 
     def update_fen_label(self, fen):
-        fen_with_details = fen
-        if self.extract_fen_details(fen) == "":
-            fen_with_details = fen + " " + self.initial_fen_details
-        self.new_fen = fen_with_details
-        self.generated_fen_text_edit.setText(fen_with_details)
+        fen = self.get_fen_base(fen)
+        self.generated_fen_text_edit.setText(fen)
+        self.current_fen = fen
 
     def update_image_count_label(self):
-        current_position = self.current_index + 1
-        total_images = len(self.image_paths)
+        current_position = self.current_image_index + 1
+        total_images = len(self.match['moves'])
         self.count_images_label.setText(f"Image {current_position} out of {total_images}")
-
-    def show_next_item(self):
-        if self.current_index + 1 < len(self.image_paths):
-            self.current_index += 1
-            self.initial_fen_details = self.extract_fen_details(self.fen_strings[self.current_index])
-            self.set_image(self.image_paths[self.current_index])
-            self.set_chess_game(self.fen_strings[self.current_index])
-            self.update_fen_label(self.fen_strings[self.current_index])
-            self.update_image_count_label()
-        else:
-            QMessageBox.information(self, "Validation finished", "You have finished validating all the images")
-            self.close()
-            self.main_window.show()
-
-    def create_folder_if_not_exists(self, folder_path):
-        try:
-            if not os.path.exists(folder_path):
-                os.makedirs(folder_path)
-        except OSError as error:
-            print(f"Error creating directory: {error}")
-            msg_box = QMessageBox()
-            msg_box.setIcon(QMessageBox.Critical)
-            msg_box.setWindowTitle("Error")
-            msg_box.setText("An error occurred while creating the directory to store the new csv file.")
-            msg_box.setInformativeText(str(error))
-            msg_box.exec_()
-            raise
-
-    def get_destination_csv_file_path(self, file_name):
-        path = os.path.join(self.destination_folder_path, os.path.basename(self.folder_path))
-        self.create_folder_if_not_exists(path)
-        return os.path.join(path, file_name)
-
-    def get_specific_row_with_headers_dict(self, csv_file_path, row_index):
-        with open(csv_file_path, mode='r') as file:
-            csv_reader = csv.DictReader(file)
-            headers = csv_reader.fieldnames
-            for current_index, row in enumerate(csv_reader, start=0):
-                if current_index == row_index:
-                    return headers, row
-
-    def copy_image(self, source_path, destination_folder):
-        destination_path = os.path.join(destination_folder, os.path.basename(source_path))
-        shutil.copy(source_path, destination_path)
-
-    def store_updated_fen(self):
-        headers, row_dict = self.get_specific_row_with_headers_dict(self.csv_file_path, self.current_index)
-        row_dict['fen'] = self.new_fen
-        row_dict['verified'] = 'Yes'
-        destination_csv_file = self.get_destination_csv_file_path('labels.csv')
-        file_exists = os.path.isfile(destination_csv_file)
-        with open(destination_csv_file, mode='a', newline='') as csvfile:
-                writer = csv.DictWriter(csvfile, fieldnames=headers + ['verified'])
-                if not file_exists:
-                    writer.writeheader()
-                writer.writerow(row_dict)
-        img_destination_path = os.path.join(self.destination_folder_path, os.path.basename(self.folder_path))
-        self.copy_image(self.image_paths[self.current_index], img_destination_path )
-
+        self.image_text_label.setText(f" Move {self.current_move['move_number']} image")
 
     def extract_fen_details(self,fen):
         parts = fen.split(' ')
@@ -158,32 +67,188 @@ class ValidationWindowForm(QWidget, ValidationWindow):
         else:
             return ""
 
-    def show_image_dialog(self):
-        image_path = self.chess_img_label.property('image_path')
-        pixmap = QPixmap(image_path)
-        dialog = QDialog(self)
-        layout = QVBoxLayout()
-        label = QLabel()
-        label.setPixmap(pixmap.scaled(980, 980, Qt.KeepAspectRatio, Qt.SmoothTransformation))
-        layout.addWidget(label)
-        dialog.setLayout(layout)
-        if image_path and os.path.isfile(image_path):
-            # Open the image with the system's default application
-            if os.name == 'nt':  # If the system is Windows
-                os.startfile(image_path)
-            elif os.name == 'posix':
-                if 'darwin' in os.sys.platform:  # macOS
-                    subprocess.run(['open', image_path])
-                else:  # Unix/Linux
-                    subprocess.run(['xdg-open', image_path])
+    def get_fen_base(self,fen_string):
+        return fen_string.split(' ')[0]
+
+    def open_image_with_os_application(self):
+        try:
+            if self.current_image_data.isEmpty():
+                return
+
+            # Write image data to a temporary file
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+            temp_file.write(self.current_image_data.data())
+            temp_file.close()
+            if os.path.getsize(temp_file.name) > 0:
+                if not QDesktopServices.openUrl(QUrl.fromLocalFile(temp_file.name)):
+                    print("Failed to open the image with the default application.")
             else:
-                print("OS not supported!")
-        dialog.exec()
+                print("The temporary image file is empty.")
+
+        except Exception as e:
+            print("An exception occurred while attempting to open the image:", e)
+            traceback.print_exc()
+
+    def show_next_image(self):
+        if self.current_image_index < len(self.match['moves']):
+            self.current_move = self.match['moves'][self.current_image_index]
+            # Request the DataFetcher to fetch the next image
+            self.data_fetcher.fetch_next_image(self.current_move)
+            self.current_fen = self.current_move['fen']
+            self.update_fen_label(self.current_fen)
+            self.set_chess_game(self.current_fen)
+            self.update_image_count_label()
+        else:
+            self.update_match_validated_field()
+            self.finish_validation()
+
+    def on_image_fetched(self, image_data):
+        self.current_image_data = image_data
+        pixmap = QPixmap()
+        pixmap.loadFromData(image_data)
+        pixmap = pixmap.scaled(550, 600, Qt.KeepAspectRatio)
+        self.chess_img_label.setPixmap(pixmap)
+        self.setButtonLoadingState(False)
+        self.overlay.hide()
+
+    def on_validate(self):
+        self.setButtonLoadingState(True)
+        self.show_overlay()
+        QApplication.processEvents()
+        success = self.save_validation()
+        if success:
+            self.current_image_index += 1
+            self.show_next_image()
+        else:
+            self.setButtonLoadingState(False)
+            self.overlay.hide()
 
 
-    def validate_and_show_next(self):
-        self.store_updated_fen()
-        self.show_next_item()
+    def on_data_fetched(self, match_data, image_data):
+        self.hide_loading()
+        self.match = match_data
+        self.current_move = self.match['moves'][self.current_image_index]
+        fen = self.current_move['fen']
+        self.set_chess_game(fen)
+        self.on_image_fetched(image_data)
+        self.update_image_count_label()
+        self.update_fen_label(fen)
+
+    def on_fetch_error(self, error_message):
+        self.hide_loading()
+        self.overlay.hide()
+        QMessageBox.critical(self, "Error", "Failed to fetch data: " + error_message)
+
+    def finish_validation(self):
+        self.overlay.hide()
+        QMessageBox.information(self, "Validation finished", "You have finished validating all the images for the selected chess game.")
+        self.close()
+        self.main_window.show()
+
+    def start_data_fetching(self, match_id):
+        if not mongo_db_instance.is_connected():
+            mongo_db_instance.connect()
+        ssh_details = get_ssh_details()
+        self.data_fetcher = DataFetcher(mongo_db_instance, match_id, ssh_details, parent=self)
+        self.data_fetcher.data_fetched.connect(self.on_data_fetched)
+        self.data_fetcher.error_occurred.connect(self.on_fetch_error)
+        self.data_fetcher.image_fetched.connect(self.on_image_fetched)
+        self.data_fetcher.start()
+
+    def show_loading(self):
+        self.loader_label = QLabel(self.central_widget_frame)
+        self.loader_label.setAlignment(Qt.AlignCenter)
+        self.loader_movie = QMovie(u":/assets/loading.gif")
+        self.loader_label.setMovie(self.loader_movie)
+        self.loader_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        # Hide all elements that should not be visible during loading
+        self.content_frame.hide()
+        self.img_count_frame.hide()
+        self.image_board_frame.hide()
+        self.generated_fen_frame.hide()
+        self.btns_frame.hide()
+
+
+        self.verticalLayout.setAlignment(Qt.AlignCenter)
+        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout.setSpacing(0)
+        self.verticalLayout.addWidget(self.loader_label)
+        self.loader_label.setStyleSheet("border: none;")
+
+        # Start the loader animation and show the loader label
+        self.loader_movie.start()
+        self.loader_label.show()
+        self.loader_label.raise_()
+
+    def hide_loading(self):
+        self.loader_movie.stop()
+        self.loader_label.hide()
+
+        # Show other UI elements
+        self.content_frame.show()
+        self.img_count_frame.show()
+        self.image_board_frame.show()
+        self.generated_fen_frame.show()
+        self.btns_frame.show()
+
+    def save_validation(self):
+        try:
+            if not mongo_db_instance.is_connected():
+                mongo_db_instance.connect()
+
+            matched_count, modified_count = mongo_db_instance.update_match_move_verified_and_fen(
+                self.match_id,
+                self.current_move['_id'],
+                self.current_fen
+            )
+            if matched_count == 0:
+                raise ValueError("No matching document found with the provided match_id and move_id.")
+            if modified_count == 0:
+                raise ValueError("The move was not updated, possibly because it was already verified or had the same FEN.")
+            #QMessageBox.information(self, "Update Successful", "The move has been verified and updated successfully.")
+            return True
+
+        except Exception as e:
+            QMessageBox.critical(self, "Update Failed", f"An error occurred while updating the move: {e}")
+            return False
+
+
+    def setButtonLoadingState(self, isLoading=True):
+        icon1 = QIcon()
+        if isLoading:
+            self.save_validation_btn.setText("Validating...")
+            self.save_validation_btn.setEnabled(False)
+            icon1.addFile(u":/assets/icons/loader.svg", QSize(), QIcon.Normal, QIcon.Off)
+            self.save_validation_btn.setIcon(icon1)
+            self.save_validation_btn.setIconSize(QSize(22, 22))
+        else:
+            self.save_validation_btn.setText("Validate and Save")
+            self.save_validation_btn.setEnabled(True)
+            icon1.addFile(u":/assets/icons/save.png", QSize(), QIcon.Normal, QIcon.Off)
+            self.save_validation_btn.setIcon(icon1)
+            self.save_validation_btn.setIconSize(QSize(22, 22))
+        QApplication.processEvents()
+
+    def show_overlay(self):
+        self.overlay.show()
+        self.overlay.raise_()
+        self.overlay.setGeometry(self.frameGeometry())
+
+    def update_match_validated_field(self):
+        if not mongo_db_instance.is_connected():
+            mongo_db_instance.connect()
+        try:
+            update_result = mongo_db_instance.update_match_verified_status(self.match_id)
+            if update_result:
+                print("The match verified status was successfully updated.")
+            else:
+                print("Verified status of the match was not updated since it still has pending moves to validate")
+        except ValueError as e:
+            print(f"Error: {e}")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+
 
 
 

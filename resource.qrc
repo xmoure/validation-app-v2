@@ -1,5 +1,9 @@
 <RCC>
   <qresource>
+    <file>assets/icons/check.svg</file>
+    <file>assets/icons/x.svg</file>
+    <file>assets/loading.gif</file>
+    <file>assets/icons/loader.svg</file>
     <file>assets/icons/forward-white.png</file>
     <file>assets/icons/cancel-white.png</file>
     <file>assets/icons/save-black.png</file>

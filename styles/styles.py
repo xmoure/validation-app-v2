@@ -3,7 +3,7 @@ styles_table_files = '''
         border-radius: 10px;
         selection-background-color: #FFFFFF;
         alternate-background-color: #FFFFFF;
-        background:#cfc6cb;
+        background:#FFFFFF;
     }
     QHeaderView::section {
         background-color: #324960;
@@ -22,6 +22,11 @@ styles_table_files = '''
     QHeaderView::section:last:vertical {
         border-bottom-left-radius: 10px;
     }
+
+    QTableWidget::item:selected {
+        background-color: #AED6F1;
+        color: #0a0a0a;
+    }
 '''
 
 styles_btn_disabled = '''
@@ -36,4 +41,8 @@ styles_btn_enabled = '''
         background-color: #ff6e40;
         color: white;
     }
+'''
+
+styles_table_frame = '''
+    border-radius: 10px;
 '''

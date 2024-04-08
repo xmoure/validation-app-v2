@@ -16,9 +16,8 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QFrame, QHBoxLayout, QHeaderView,
-    QLabel, QLineEdit, QPushButton, QSizePolicy,
-    QTableWidget, QTableWidgetItem, QToolButton, QVBoxLayout,
-    QWidget)
+    QLabel, QPushButton, QSizePolicy, QTableWidget,
+    QTableWidgetItem, QVBoxLayout, QWidget)
 import resource_rc
 
 class MainWindow(object):
@@ -58,111 +57,30 @@ class MainWindow(object):
         self.content_frame.setFrameShadow(QFrame.Raised)
         self.verticalLayout_4 = QVBoxLayout(self.content_frame)
         self.verticalLayout_4.setObjectName(u"verticalLayout_4")
-        self.selection_frame = QFrame(self.content_frame)
-        self.selection_frame.setObjectName(u"selection_frame")
-        self.selection_frame.setMinimumSize(QSize(0, 120))
-        self.selection_frame.setMaximumSize(QSize(16777215, 130))
-        self.selection_frame.setFont(font)
-        self.selection_frame.setFrameShape(QFrame.NoFrame)
-        self.selection_frame.setFrameShadow(QFrame.Raised)
-        self.verticalLayout_5 = QVBoxLayout(self.selection_frame)
-        self.verticalLayout_5.setObjectName(u"verticalLayout_5")
-        self.verticalLayout_5.setContentsMargins(0, 0, 0, 0)
-        self.path_selection_frame = QFrame(self.selection_frame)
-        self.path_selection_frame.setObjectName(u"path_selection_frame")
-        self.path_selection_frame.setMinimumSize(QSize(0, 25))
-        self.path_selection_frame.setMaximumSize(QSize(16777215, 50))
-        self.path_selection_frame.setFrameShape(QFrame.NoFrame)
-        self.path_selection_frame.setFrameShadow(QFrame.Raised)
-        self.horizontalLayout = QHBoxLayout(self.path_selection_frame)
-        self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.horizontalLayout.setContentsMargins(0, 10, 0, 10)
-        self.select_folder_label = QLabel(self.path_selection_frame)
-        self.select_folder_label.setObjectName(u"select_folder_label")
-        self.select_folder_label.setMinimumSize(QSize(320, 0))
-        self.select_folder_label.setMaximumSize(QSize(320, 16777215))
+        self.title_frame = QFrame(self.content_frame)
+        self.title_frame.setObjectName(u"title_frame")
+        self.title_frame.setMinimumSize(QSize(0, 50))
+        self.title_frame.setMaximumSize(QSize(16777215, 50))
+        self.title_frame.setFont(font)
+        self.title_frame.setFrameShape(QFrame.NoFrame)
+        self.title_frame.setFrameShadow(QFrame.Plain)
+        self.verticalLayout_2 = QVBoxLayout(self.title_frame)
+        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
+        self.title_label = QLabel(self.title_frame)
+        self.title_label.setObjectName(u"title_label")
         font1 = QFont()
         font1.setFamilies([u"Arial"])
-        font1.setPointSize(14)
-        font1.setBold(True)
-        self.select_folder_label.setFont(font1)
-        self.select_folder_label.setStyleSheet(u"color: black;\n"
-"")
+        font1.setPointSize(18)
+        self.title_label.setFont(font1)
+        self.title_label.setStyleSheet(u"color: black;")
+        self.title_label.setFrameShape(QFrame.NoFrame)
+        self.title_label.setFrameShadow(QFrame.Plain)
+        self.title_label.setAlignment(Qt.AlignCenter)
 
-        self.horizontalLayout.addWidget(self.select_folder_label)
-
-        self.folder_path_line_edit = QLineEdit(self.path_selection_frame)
-        self.folder_path_line_edit.setObjectName(u"folder_path_line_edit")
-        self.folder_path_line_edit.setEnabled(False)
-        self.folder_path_line_edit.setMinimumSize(QSize(180, 30))
-        font2 = QFont()
-        font2.setFamilies([u"Arial"])
-        font2.setPointSize(14)
-        self.folder_path_line_edit.setFont(font2)
-        self.folder_path_line_edit.setStyleSheet(u"background-color: white;\n"
-"border: 1px solid #ff6e40;\n"
-"color: black;")
-        self.folder_path_line_edit.setFrame(True)
-
-        self.horizontalLayout.addWidget(self.folder_path_line_edit)
-
-        self.select_folder_btn = QToolButton(self.path_selection_frame)
-        self.select_folder_btn.setObjectName(u"select_folder_btn")
-        self.select_folder_btn.setMinimumSize(QSize(0, 30))
-        icon = QIcon()
-        icon.addFile(u":/assets/icons/folder-yellow.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.select_folder_btn.setIcon(icon)
-        self.select_folder_btn.setIconSize(QSize(22, 22))
-
-        self.horizontalLayout.addWidget(self.select_folder_btn)
+        self.verticalLayout_2.addWidget(self.title_label)
 
 
-        self.verticalLayout_5.addWidget(self.path_selection_frame)
-
-        self.path_selection_frame_2 = QFrame(self.selection_frame)
-        self.path_selection_frame_2.setObjectName(u"path_selection_frame_2")
-        self.path_selection_frame_2.setMinimumSize(QSize(0, 0))
-        self.path_selection_frame_2.setMaximumSize(QSize(16777215, 50))
-        self.path_selection_frame_2.setFrameShape(QFrame.NoFrame)
-        self.path_selection_frame_2.setFrameShadow(QFrame.Raised)
-        self.horizontalLayout_2 = QHBoxLayout(self.path_selection_frame_2)
-        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.horizontalLayout_2.setContentsMargins(0, 10, 0, 10)
-        self.select_destination_folder_label = QLabel(self.path_selection_frame_2)
-        self.select_destination_folder_label.setObjectName(u"select_destination_folder_label")
-        self.select_destination_folder_label.setMinimumSize(QSize(320, 0))
-        self.select_destination_folder_label.setMaximumSize(QSize(320, 16777215))
-        self.select_destination_folder_label.setFont(font1)
-        self.select_destination_folder_label.setStyleSheet(u"color: black;\n"
-"")
-
-        self.horizontalLayout_2.addWidget(self.select_destination_folder_label)
-
-        self.destination_folder_path_line_edit = QLineEdit(self.path_selection_frame_2)
-        self.destination_folder_path_line_edit.setObjectName(u"destination_folder_path_line_edit")
-        self.destination_folder_path_line_edit.setEnabled(False)
-        self.destination_folder_path_line_edit.setMinimumSize(QSize(180, 30))
-        self.destination_folder_path_line_edit.setFont(font2)
-        self.destination_folder_path_line_edit.setStyleSheet(u"background-color: white;\n"
-"border: 1px solid #ff6e40;\n"
-"color: black;")
-        self.destination_folder_path_line_edit.setFrame(True)
-
-        self.horizontalLayout_2.addWidget(self.destination_folder_path_line_edit)
-
-        self.select_destination_folder_btn = QToolButton(self.path_selection_frame_2)
-        self.select_destination_folder_btn.setObjectName(u"select_destination_folder_btn")
-        self.select_destination_folder_btn.setMinimumSize(QSize(0, 30))
-        self.select_destination_folder_btn.setIcon(icon)
-        self.select_destination_folder_btn.setIconSize(QSize(22, 22))
-
-        self.horizontalLayout_2.addWidget(self.select_destination_folder_btn)
-
-
-        self.verticalLayout_5.addWidget(self.path_selection_frame_2)
-
-
-        self.verticalLayout_4.addWidget(self.selection_frame)
+        self.verticalLayout_4.addWidget(self.title_frame)
 
         self.table_frame = QFrame(self.content_frame)
         self.table_frame.setObjectName(u"table_frame")
@@ -175,26 +93,18 @@ class MainWindow(object):
         self.horizontalLayout_3 = QHBoxLayout(self.table_frame)
         self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
         self.horizontalLayout_3.setContentsMargins(0, 0, 0, 0)
-        self.files_table = QTableWidget(self.table_frame)
-        self.files_table.setObjectName(u"files_table")
-        self.files_table.setMinimumSize(QSize(200, 200))
-        self.files_table.setFont(font)
-        self.files_table.setStyleSheet(u"")
-        self.files_table.setFrameShape(QFrame.NoFrame)
-        self.files_table.setLineWidth(0)
+        self.games_table = QTableWidget(self.table_frame)
+        self.games_table.setObjectName(u"games_table")
+        self.games_table.setMinimumSize(QSize(200, 200))
+        self.games_table.setFont(font)
+        self.games_table.setStyleSheet(u"")
+        self.games_table.setFrameShape(QFrame.NoFrame)
+        self.games_table.setLineWidth(0)
 
-        self.horizontalLayout_3.addWidget(self.files_table)
+        self.horizontalLayout_3.addWidget(self.games_table)
 
 
         self.verticalLayout_4.addWidget(self.table_frame)
-
-        self.number_files_label = QLabel(self.content_frame)
-        self.number_files_label.setObjectName(u"number_files_label")
-        self.number_files_label.setFont(font1)
-        self.number_files_label.setStyleSheet(u"color: black;\n"
-"")
-
-        self.verticalLayout_4.addWidget(self.number_files_label)
 
         self.validation_btn_frame = QFrame(self.content_frame)
         self.validation_btn_frame.setObjectName(u"validation_btn_frame")
@@ -208,18 +118,18 @@ class MainWindow(object):
         self.start_validation_btn.setObjectName(u"start_validation_btn")
         self.start_validation_btn.setMinimumSize(QSize(230, 35))
         self.start_validation_btn.setMaximumSize(QSize(230, 35))
-        font3 = QFont()
-        font3.setFamilies([u"Arial"])
-        font3.setBold(True)
-        self.start_validation_btn.setFont(font3)
+        font2 = QFont()
+        font2.setFamilies([u"Arial"])
+        font2.setBold(True)
+        self.start_validation_btn.setFont(font2)
         self.start_validation_btn.setStyleSheet(u"QPushButton{\n"
 "	background-color : #ff6e40;\n"
 "	color: white;\n"
 "}\n"
 "QPushButton::hover {background-color : #ffc13b};")
-        icon1 = QIcon()
-        icon1.addFile(u":/assets/icons/forward-white.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.start_validation_btn.setIcon(icon1)
+        icon = QIcon()
+        icon.addFile(u":/assets/icons/forward-white.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.start_validation_btn.setIcon(icon)
         self.start_validation_btn.setIconSize(QSize(18, 18))
 
         self.horizontalLayout_4.addWidget(self.start_validation_btn)
@@ -244,11 +154,7 @@ class MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"Form", None))
-        self.select_folder_label.setText(QCoreApplication.translate("MainWindow", u"Select the folder that contains the images:", None))
-        self.select_folder_btn.setText("")
-        self.select_destination_folder_label.setText(QCoreApplication.translate("MainWindow", u"Select the folder to store the validated images: ", None))
-        self.select_destination_folder_btn.setText("")
-        self.number_files_label.setText(QCoreApplication.translate("MainWindow", u"Number of files: ", None))
+        self.title_label.setText(QCoreApplication.translate("MainWindow", u"Chess games with moves pending validation", None))
         self.start_validation_btn.setText(QCoreApplication.translate("MainWindow", u"Start Validation", None))
     # retranslateUi
 

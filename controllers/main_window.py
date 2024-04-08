@@ -1,155 +1,64 @@
-import os
-import resource_rc
-from PySide6.QtCore import Qt, QSize
-from PySide6.QtWidgets import QWidget, QFileDialog, QTableWidgetItem, QLabel, QAbstractItemView, QDialog, QVBoxLayout, QHeaderView, QSizePolicy, QMessageBox
-from PySide6.QtGui import QPixmap, QIcon, QColor
-from styles.styles import styles_table_files, styles_btn_disabled, styles_btn_enabled
-from natsort import natsorted
+from PySide6.QtCore import Qt, QSize,QCoreApplication
+from PySide6.QtWidgets import QWidget, QTableWidgetItem, QAbstractItemView, QHeaderView, QSizePolicy, QLabel
+from PySide6.QtGui import QIcon
+from styles.styles import styles_table_files, styles_btn_disabled, styles_btn_enabled, styles_table_frame
 from views.main_window_ui import MainWindow
 from controllers.validation_window import ValidationWindowForm
+from database.mongo_db import mongo_db_instance
+from datetime import datetime
 
-BUTTON_DISABLED_TEXT = "Button disabled. You need to select the image and destination folders."
+BUTTON_DISABLED_TEXT = "Button disabled. You need to select a chess game."
 
 class MainWindowForm(QWidget, MainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setupUi(self)
+        self.set_no_matches_label()
         self.local_ui_setup()
 
     def local_ui_setup(self):
         self.setWindowTitle('FEN Validation')
-        self.destination_folder_path = ''
-        self.folder_path = ''
-        self.table_frame.setVisible(False)
-        self.number_files_label.setVisible(False)
-        self.start_validation_btn.setVisible(False)
+        self.selected_match_id = ''
         self.start_validation_btn.setEnabled(False)
-        self.image_paths = {}
+        self.update_button_style()
         self.config_table()
-        self.files_table.cellClicked.connect(self.cell_clicked)
+        self.load_matches()
         self.start_validation_btn.setToolTip(BUTTON_DISABLED_TEXT)
-        self.select_folder_btn.clicked.connect(self.select_images_folder)
-        self.select_destination_folder_btn.clicked.connect(self.select_destination_folder)
+        self.games_table.itemSelectionChanged.connect(self.row_selected)
         self.start_validation_btn.clicked.connect(self.open_validation_window)
 
+
+    def set_no_matches_label(self):
+        self.title_frame.setFixedHeight(0)
+        self.title_frame.hide()
+        self.no_matches_label = QLabel(self.content_frame)
+        self.no_matches_label.setObjectName(u"no_matches_label")
+        self.no_matches_label.setStyleSheet(u"color: #d1221f; font-size: 22px")
+        self.no_matches_label.setAlignment(Qt.AlignCenter)
+        self.no_matches_label.setText(QCoreApplication.translate("MainWindow", u"There are no chess games with unverified moves", None))
+        self.no_matches_label.hide()
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.no_matches_label.setSizePolicy(sizePolicy)
+
     def open_validation_window(self):
-        window =  ValidationWindowForm(self, self.folder_path, self.destination_folder_path)
-        window.show()
+        if self.selected_match_id:
+            window =  ValidationWindowForm(self, self.selected_match_id)
+            window.show()
 
-    def get_folder_contents(self):
-        try:
-            contents = os.listdir(self.folder_path)
-            return contents
-        except FileNotFoundError:
-            print(f"The directory {self.folder_path} does not exist")
-            QMessageBox.critical(self, "Error", f"The directory {self.folder_path} does not exist")
-            return []
-        except PermissionError:
-            print("You do not have permissions to access the directory")
-            QMessageBox.critical(self, "Error", "You do not have permissions to access the directory")
-            return []
-        except Exception as e:
-            print(f"An error occurred: {e}")
-            QMessageBox.critical(self, "Error", f"An error occurred: {e}")
-            return []
-
-    def select_images_folder(self):
-        self.folder_path= QFileDialog.getExistingDirectory(self, "Select folder")
-        if self.folder_path:
-            self.folder_content = self.get_folder_contents()
-            self.folder_path_line_edit.setText(self.folder_path)
-            self.populate_table_with_folder_contents(self.folder_path)
-            self.table_frame.setVisible(True)
-            self.start_validation_btn.setVisible(True)
-            self.number_files_label.setVisible(True)
-            self.toggle_button_state()
-
-    def select_destination_folder(self):
-        self.destination_folder_path= QFileDialog.getExistingDirectory(self, "Select destination folder")
-        if self.destination_folder_path:
-            print("Selected destination folder", self.destination_folder_path)
-            self.destination_folder_path_line_edit.setText(self.destination_folder_path)
-            self.toggle_button_state()
 
     def config_table(self):
-        self.files_table.setStyleSheet(styles_table_files)
-        #self.files_table.horizontalHeader().setStyleSheet(styles_table_files)
-        #self.files_table.verticalHeader().setStyleSheet(styles_table_files)
-        self.files_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.files_table.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.files_table.setSelectionMode(QAbstractItemView.NoSelection)
-        self.files_table.verticalHeader().setVisible(False)
-        self.files_table.setAlternatingRowColors(True)
+        self.table_frame.setStyleSheet(styles_table_frame)
+        self.games_table.setStyleSheet(styles_table_files)
+        self.games_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.games_table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.games_table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.games_table.verticalHeader().setVisible(False)
 
-        column_labels = ("FILE NAME", "IMAGE")
-        self.files_table.setColumnCount(len(column_labels))
-        self.files_table.setRowCount(len(self.folder_path))
-        self.files_table.setHorizontalHeaderLabels(column_labels)
-        self.files_table.setColumnWidth(1, 400)
-        self.files_table.setColumnWidth(0,150)
-        self.files_table.verticalHeader().setDefaultSectionSize(150)
-        self.files_table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        column_labels = ("MATCH ID", "DATE", "SOURCE", "TOTAL MOVES", "VERIFIED")
+        self.games_table.setColumnCount(len(column_labels))
+        self.games_table.setHorizontalHeaderLabels(column_labels)
+        self.games_table.verticalHeader().setDefaultSectionSize(150)
 
-
-    def populate_table_with_folder_contents(self, folder_path):
-        files = os.listdir(folder_path)
-        sorted_files = natsorted(files)
-        self.files_table.setRowCount(len(sorted_files))
-        self.files_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        header = self.files_table.horizontalHeader()
-        header.setSectionResizeMode(1, QHeaderView.Stretch)
-        self.number_files_label.setText(f"Number of files: {len(files)}")
-
-        even_color = QColor('#FFFFFF')
-        odd_color = QColor('#FFFFFF')
-
-        for row, file in enumerate(sorted_files):
-            file_path = os.path.join(folder_path, file)
-            item = QTableWidgetItem(file)
-            # Make the item non-editable
-            item.setFlags(item.flags() & ~Qt.ItemIsEditable)
-            item.setTextAlignment(Qt.AlignCenter)
-            background_color = even_color if row % 2 == 0 else odd_color
-            item.setBackground(background_color)
-            self.files_table.setItem(row, 0, item)
-            self.files_table.setRowHeight(row, 350)
-
-            if file.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):
-                self.image_paths[(row, 1)] = file_path
-                label = QLabel()
-                label.setAlignment(Qt.AlignCenter)
-                pixmap = QPixmap(file_path)
-                pixmap = pixmap.scaled(500, 500, Qt.KeepAspectRatio)
-                label.setPixmap(pixmap)
-                label.setStyleSheet("margin-left: 10px")
-                label.setStyleSheet("background-color: {}".format(background_color.name()))
-                self.files_table.setCellWidget(row, 1, label)
-
-            else:
-                self.files_table.setRowHeight(row, 130)
-                icon = QIcon()
-                icon.addFile(u":/assets/icons/file-text.svg", QSize(), QIcon.Normal, QIcon.Off)
-                label = QLabel()
-                label.setAlignment(Qt.AlignCenter)
-                label.setPixmap(icon.pixmap(100, 100))
-                label.setStyleSheet("background-color: {}".format(background_color.name()))
-                self.files_table.setCellWidget(row, 1, label)
-
-
-    def cell_clicked(self, row, column):
-        if (row, column) in self.image_paths:
-            image_path = self.image_paths[(row, column)]
-            pixmap = QPixmap(image_path)
-            self.show_image_dialog(pixmap)
-
-    def show_image_dialog(self, pixmap):
-        dialog = QDialog(self)
-        layout = QVBoxLayout()
-        label = QLabel()
-        label.setPixmap(pixmap.scaled(980, 980, Qt.KeepAspectRatio, Qt.SmoothTransformation))
-        layout.addWidget(label)
-        dialog.setLayout(layout)
-        dialog.exec()
 
     def update_tooltip(self):
         if not self.start_validation_btn.isEnabled():
@@ -157,14 +66,6 @@ class MainWindowForm(QWidget, MainWindow):
             self.start_validation_btn.setToolTipDuration(3000)
         else:
             self.start_validation_btn.setToolTip("")
-
-    def toggle_button_state(self):
-        if self.folder_path and self.destination_folder_path:
-            self.start_validation_btn.setEnabled(True)
-            self.update_tooltip()
-        else:
-            self.start_validation_btn.setEnabled(False)
-        self.update_button_style()
 
     def update_button_style(self):
         if self.start_validation_btn.isEnabled():
@@ -179,6 +80,97 @@ class MainWindowForm(QWidget, MainWindow):
         icon1.addFile(u":/assets/icons/play-white.png", QSize(), QIcon.Normal, QIcon.Off)
         self.start_validation_btn.setIcon(icon1)
         self.start_validation_btn.setIconSize(QSize(22, 22))
+
+    def load_matches(self):
+        if not mongo_db_instance.is_connected():
+            mongo_db_instance.connect()
+        unverified_matches_cursor = mongo_db_instance.find_matches_with_not_validated_moves()
+        unverified_matches = list(unverified_matches_cursor)
+        total_unverified = len(unverified_matches)
+
+        if total_unverified == 0:
+            self.show_no_matches_label()
+        else:
+            self.set_table_data(unverified_matches)
+
+
+    def set_table_data(self, unverified_matches):
+        self.hide_no_matches_label()
+        self.games_table.setRowCount(0)
+        self.games_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        header = self.games_table.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.Stretch)
+        header.setSectionResizeMode(2, QHeaderView.Stretch)
+        header.setSectionResizeMode(3, QHeaderView.Stretch)
+
+        for match in unverified_matches:
+
+            row_position = self.games_table.rowCount()
+            self.games_table.insertRow(row_position)
+
+            match_id_item = QTableWidgetItem(match['match_id'])
+            match_id_item.setTextAlignment(Qt.AlignCenter)
+            match_id_item.setData(Qt.UserRole, str(match['_id']))
+            date =  self.extract_and_format_datetime(match['match_id'])
+            date_item = QTableWidgetItem(date)
+            date_item.setTextAlignment(Qt.AlignCenter)
+            source_item = QTableWidgetItem(match['source'])
+            source_item.setTextAlignment(Qt.AlignCenter)
+            total_moves_item = QTableWidgetItem(str(match['total_moves']))
+            total_moves_item.setTextAlignment(Qt.AlignCenter)
+            verified_item = QLabel()
+            verified_item.setAlignment(Qt.AlignCenter)
+            verified_item.setPixmap(QIcon(u":/assets/icons/x.svg").pixmap(22, 22))
+            verified_item.setStyleSheet("background-color: transparent;")
+
+            self.games_table.setItem(row_position, 0, match_id_item)
+            self.games_table.setItem(row_position,1, date_item)
+            self.games_table.setItem(row_position, 2, source_item)
+            self.games_table.setItem(row_position, 3, total_moves_item)
+            self.games_table.setCellWidget(row_position, 4, verified_item)
+
+
+    def show_no_matches_label(self):
+        self.table_frame.hide()
+        self.validation_btn_frame.hide()
+        self.no_matches_label.show()
+        self.verticalLayout_4.addWidget(self.no_matches_label)
+
+    def hide_no_matches_label(self):
+        self.no_matches_label.hide()
+        self.table_frame.show()
+        self.games_table.show()
+        self.validation_btn_frame.show()
+
+    def row_selected(self):
+        selected_indexes = self.games_table.selectedIndexes()
+        if selected_indexes:
+            self.start_validation_btn.setEnabled(True)
+            selected_row_index = selected_indexes[0].row()
+            match_id_item = self.games_table.item(selected_row_index, 0)
+            if match_id_item:
+                 match_mongo_id = match_id_item.data(Qt.UserRole)
+                 self.selected_match_id = match_mongo_id
+        else:
+            self.start_validation_btn.setEnabled(False)
+        self.update_button_style()
+        self.update_tooltip()
+
+    def extract_and_format_datetime(self,match_id):
+        """
+        Extracts a datetime string from a given input string in the format
+        'match-YYYYMMDDTHHMMSS' and converts it to 'Month DD, YYYY, HH:MM:SS' format.
+        """
+        try:
+            date_str = match_id.split('match-')[-1]
+            dt = datetime.strptime(date_str, "%Y%m%dT%H%M%S")
+            formatted_date = dt.strftime("%B %d, %Y, %H:%M:%S")
+            return formatted_date
+        except ValueError as e:
+            return f"Error parsing date: {str(e)}"
+
+
 
 
 
