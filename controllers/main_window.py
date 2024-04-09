@@ -29,7 +29,6 @@ class MainWindowForm(QWidget, MainWindow):
 
 
     def set_no_matches_label(self):
-        self.title_frame.setFixedHeight(0)
         self.title_frame.hide()
         self.no_matches_label = QLabel(self.content_frame)
         self.no_matches_label.setObjectName(u"no_matches_label")
@@ -91,6 +90,7 @@ class MainWindowForm(QWidget, MainWindow):
         if total_unverified == 0:
             self.show_no_matches_label()
         else:
+            self.title_frame.show()
             self.set_table_data(unverified_matches)
 
 
@@ -139,6 +139,7 @@ class MainWindowForm(QWidget, MainWindow):
 
     def hide_no_matches_label(self):
         self.no_matches_label.hide()
+        self.title_frame.show()
         self.table_frame.show()
         self.games_table.show()
         self.validation_btn_frame.show()
