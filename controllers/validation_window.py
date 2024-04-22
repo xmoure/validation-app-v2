@@ -18,6 +18,7 @@ class ValidationWindowForm(QWidget, ValidationWindow):
         super().__init__(parent)
         self.setupUi(self)
         self.setWindowTitle('FEN Validation')
+        self.starting_fen = ''
         self.generated_fen_text_edit.setEnabled(False)
         self.current_image_index = 0
         self.main_window = parent
@@ -53,11 +54,17 @@ class ValidationWindowForm(QWidget, ValidationWindow):
         self.generated_fen_text_edit.setText(fen)
         self.current_fen = fen
 
+
+    def get_image_name(self):
+        file = self.current_move['file']
+        file_name = file.split("/")[-1]
+        return file_name
+
     def update_image_count_label(self):
         current_position = self.current_image_index + 1
         total_images = len(self.match['moves'])
         self.count_images_label.setText(f"Image {current_position} out of {total_images}")
-        self.image_text_label.setText(f" Move {self.current_move['move_number']} image")
+        self.image_text_label.setText(f" Image {self.get_image_name()}")
 
     def extract_fen_details(self,fen):
         parts = fen.split(' ')
@@ -95,11 +102,11 @@ class ValidationWindowForm(QWidget, ValidationWindow):
             # Request the DataFetcher to fetch the next image
             self.data_fetcher.fetch_next_image(self.current_move)
             self.current_fen = self.current_move['fen']
+            self.starting_fen = self.current_move['fen']
             self.update_fen_label(self.current_fen)
             self.set_chess_game(self.current_fen)
             self.update_image_count_label()
         else:
-            self.update_match_validated_field()
             self.finish_validation()
 
     def on_image_fetched(self, image_data):
@@ -129,6 +136,7 @@ class ValidationWindowForm(QWidget, ValidationWindow):
         self.match = match_data
         self.current_move = self.match['moves'][self.current_image_index]
         fen = self.current_move['fen']
+        self.starting_fen = fen
         self.set_chess_game(fen)
         self.on_image_fetched(image_data)
         self.update_image_count_label()
@@ -200,7 +208,8 @@ class ValidationWindowForm(QWidget, ValidationWindow):
             matched_count, modified_count = mongo_db_instance.update_match_move_verified_and_fen(
                 self.match_id,
                 self.current_move['_id'],
-                self.current_fen
+                self.current_fen,
+                self.starting_fen,
             )
             if matched_count == 0:
                 raise ValueError("No matching document found with the provided match_id and move_id.")
@@ -234,20 +243,6 @@ class ValidationWindowForm(QWidget, ValidationWindow):
         self.overlay.show()
         self.overlay.raise_()
         self.overlay.setGeometry(self.frameGeometry())
-
-    def update_match_validated_field(self):
-        if not mongo_db_instance.is_connected():
-            mongo_db_instance.connect()
-        try:
-            update_result = mongo_db_instance.update_match_verified_status(self.match_id)
-            if update_result:
-                print("The match verified status was successfully updated.")
-            else:
-                print("Verified status of the match was not updated since it still has pending moves to validate")
-        except ValueError as e:
-            print(f"Error: {e}")
-        except Exception as e:
-            print(f"An unexpected error occurred: {e}")
 
 
 

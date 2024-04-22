@@ -31,10 +31,29 @@ class MongoDB:
 
         return collection.find_one({'_id': doc_id})
 
-
     def find_matches_with_not_validated_moves(self):
         matches_collection = self.db['matches']
-        return matches_collection.find({"verified": False}, {"moves": 0})
+        return matches_collection.aggregate([
+            {
+                "$match": {
+                    "moves": {
+                        "$elemMatch": {
+                            "verified": False
+                        }
+                    }
+                }
+            },
+            {
+                "$project": {
+                    "_id": 1,
+                    "match_id": 1,
+                    "source": 1,
+                    "total_moves": 1
+                }
+            }
+        ])
+
+
 
     def find_match_by_id_and_moves_not_validated(self, doc_id,):
         matches_collection = self.db['matches']
@@ -63,7 +82,7 @@ class MongoDB:
         return self.db is not None
 
 
-    def update_match_move_verified_and_fen(self, match_id, move_id, new_fen):
+    def update_match_move_verified_and_fen(self, match_id, move_id, new_fen, starting_fen):
         """Update the verified status and FEN string of a specific move in a match."""
         matches_collection = self.db['matches']
         try:
@@ -71,6 +90,9 @@ class MongoDB:
             move_oid = ObjectId(move_id)
         except:
             raise ValueError("Invalid match_id or move_id.")
+
+
+        fen_changed = new_fen != starting_fen
 
         # Update the move's verified status and fen where the move id matches
         update_result = matches_collection.update_one(
@@ -81,47 +103,14 @@ class MongoDB:
             {
                 '$set': {
                     'moves.$.verified': True,
-                    'moves.$.fen': new_fen
+                    'moves.$.fen': new_fen,
+                    'moves.$.fen_corrected': fen_changed,
+                    'moves.$.initial_fen': starting_fen
                 }
             }
         )
         return update_result.matched_count, update_result.modified_count
 
-
-    def all_moves_verified(self, match_id):
-        match = self.db['matches'].find_one({'_id': ObjectId(match_id)}, {'moves': 1, 'verified': 1})
-
-        if match:
-            if match.get('verified', False):
-                return True
-            # Check if all moves in the 'moves' array are verified
-            return all(move.get('verified', False) for move in match['moves'])
-        else:
-            raise ValueError("Match not found with the provided match_id.")
-
-    def update_match_verified_status(self, match_id):
-        try:
-            # If the match is already verified, there's nothing to update.
-            if self.db['matches'].find_one({'_id': ObjectId(match_id), 'verified': True}, {'_id': 1}):
-                print("The match is already verified.")
-                return True
-
-            if self.all_moves_verified(match_id):
-                # All moves are verified, so update the match verified status
-                result = self.db['matches'].update_one(
-                    {'_id': ObjectId(match_id)},
-                    {'$set': {'verified': True}}
-                )
-                return result.modified_count > 0
-            else:
-                print("Verified at match level was not updated since there are still pending moves to validate.")
-                return False
-        except PyMongoError as e:
-            print(f"An error occurred while updating the match: {e}")
-            return False
-        except Exception as e:
-            print(f"An unexpected error occurred: {e}")
-            return False
 
 
 mongo_db_instance = MongoDB()

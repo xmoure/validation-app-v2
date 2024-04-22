@@ -53,7 +53,7 @@ class MainWindowForm(QWidget, MainWindow):
         self.games_table.setSelectionMode(QAbstractItemView.SingleSelection)
         self.games_table.verticalHeader().setVisible(False)
 
-        column_labels = ("MATCH ID", "DATE", "SOURCE", "TOTAL MOVES", "VERIFIED")
+        column_labels = ("MATCH ID", "SOURCE", "TOTAL MOVES", "VERIFIED")
         self.games_table.setColumnCount(len(column_labels))
         self.games_table.setHorizontalHeaderLabels(column_labels)
         self.games_table.verticalHeader().setDefaultSectionSize(150)
@@ -112,9 +112,9 @@ class MainWindowForm(QWidget, MainWindow):
             match_id_item = QTableWidgetItem(match['match_id'])
             match_id_item.setTextAlignment(Qt.AlignCenter)
             match_id_item.setData(Qt.UserRole, str(match['_id']))
-            date =  self.extract_and_format_datetime(match['match_id'])
+            """ date =  self.extract_and_format_datetime(match['match_id'])
             date_item = QTableWidgetItem(date)
-            date_item.setTextAlignment(Qt.AlignCenter)
+            date_item.setTextAlignment(Qt.AlignCenter) """
             source_item = QTableWidgetItem(match['source'])
             source_item.setTextAlignment(Qt.AlignCenter)
             total_moves_item = QTableWidgetItem(str(match['total_moves']))
@@ -125,10 +125,10 @@ class MainWindowForm(QWidget, MainWindow):
             verified_item.setStyleSheet("background-color: transparent;")
 
             self.games_table.setItem(row_position, 0, match_id_item)
-            self.games_table.setItem(row_position,1, date_item)
-            self.games_table.setItem(row_position, 2, source_item)
-            self.games_table.setItem(row_position, 3, total_moves_item)
-            self.games_table.setCellWidget(row_position, 4, verified_item)
+            #self.games_table.setItem(row_position,1, date_item)
+            self.games_table.setItem(row_position, 1, source_item)
+            self.games_table.setItem(row_position, 2, total_moves_item)
+            self.games_table.setCellWidget(row_position, 3, verified_item)
 
 
     def show_no_matches_label(self):
