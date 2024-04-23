@@ -1,0 +1,1 @@
+CHESS_MATERIALS = ['Unspecified', 'Wood', 'Ebony', 'Rosewood', 'Boxwood', 'Mahogany', 'Maple', 'Walnut', 'Sandalwood', 'Resin', 'Plastic', 'Glass', 'Stone', 'Metal', 'Ivory', 'Vinyl']

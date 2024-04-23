@@ -48,7 +48,8 @@ class MongoDB:
                     "_id": 1,
                     "match_id": 1,
                     "source": 1,
-                    "total_moves": 1
+                    "total_moves": 1,
+                    "material": 1
                 }
             }
         ])
@@ -110,6 +111,20 @@ class MongoDB:
             }
         )
         return update_result.matched_count, update_result.modified_count
+
+
+    def update_board_material_by_match_id(self, match_id, material):
+        matches_collection = self.db['matches']
+        try:
+            match_oid = ObjectId(match_id)
+        except:
+            raise ValueError("Invalid match_id.")
+
+        result = matches_collection.update_one(
+            {"_id": match_oid},
+            {"$set": {"material": material}}
+        )
+        return result.matched_count, result.modified_count
 
 
 

@@ -1,11 +1,13 @@
 from PySide6.QtCore import Qt, QSize,QCoreApplication
-from PySide6.QtWidgets import QWidget, QTableWidgetItem, QAbstractItemView, QHeaderView, QSizePolicy, QLabel
+from PySide6.QtWidgets import QWidget, QTableWidgetItem, QAbstractItemView, QHeaderView, QSizePolicy, QLabel, QPushButton
 from PySide6.QtGui import QIcon
 from styles.styles import styles_table_files, styles_btn_disabled, styles_btn_enabled, styles_table_frame
 from views.main_window_ui import MainWindow
 from controllers.validation_window import ValidationWindowForm
 from database.mongo_db import mongo_db_instance
 from datetime import datetime
+from controllers.edit_window import EditDialog
+from functools import partial
 
 BUTTON_DISABLED_TEXT = "Button disabled. You need to select a chess game."
 
@@ -53,7 +55,7 @@ class MainWindowForm(QWidget, MainWindow):
         self.games_table.setSelectionMode(QAbstractItemView.SingleSelection)
         self.games_table.verticalHeader().setVisible(False)
 
-        column_labels = ("MATCH ID", "SOURCE", "TOTAL MOVES", "VERIFIED")
+        column_labels = ("MATCH ID", "SOURCE", "TOTAL MOVES", "VERIFIED", "EDIT")
         self.games_table.setColumnCount(len(column_labels))
         self.games_table.setHorizontalHeaderLabels(column_labels)
         self.games_table.verticalHeader().setDefaultSectionSize(150)
@@ -106,6 +108,7 @@ class MainWindowForm(QWidget, MainWindow):
 
         for match in unverified_matches:
 
+
             row_position = self.games_table.rowCount()
             self.games_table.insertRow(row_position)
 
@@ -124,11 +127,29 @@ class MainWindowForm(QWidget, MainWindow):
             verified_item.setPixmap(QIcon(u":/assets/icons/x.svg").pixmap(22, 22))
             verified_item.setStyleSheet("background-color: transparent;")
 
+            btn_edit = QPushButton()
+            btn_edit.setIcon(QIcon(u":/assets/icons/edit.svg"))
+            btn_edit.setStyleSheet("background-color: transparent;")
+            match_id = match['_id']
+            material = match.get('material', '')
+            btn_edit.clicked.connect(partial(self.create_edit_dialog, match_id, material))
+
+
             self.games_table.setItem(row_position, 0, match_id_item)
             #self.games_table.setItem(row_position,1, date_item)
             self.games_table.setItem(row_position, 1, source_item)
             self.games_table.setItem(row_position, 2, total_moves_item)
             self.games_table.setCellWidget(row_position, 3, verified_item)
+            self.games_table.setCellWidget(row_position, 4, btn_edit)
+
+    def create_edit_dialog(self, match_id, material):
+        edit_dialog = EditDialog(self)
+        edit_dialog.set_data({'_id': match_id, 'material': material})
+        edit_dialog.dialog_saved.connect(self.on_edit_dialog_saved)
+        edit_dialog.showDialog()
+
+    def on_edit_dialog_saved(self):
+        self.load_matches()
 
 
     def show_no_matches_label(self):

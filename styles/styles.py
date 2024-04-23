@@ -46,3 +46,11 @@ styles_btn_enabled = '''
 styles_table_frame = '''
     border-radius: 10px;
 '''
+
+styles_combobox = '''
+    QComboBox{
+        border: 1px solid #ff6e40;
+        color: black;
+        background-color:white ;
+    }
+'''

@@ -1,5 +1,6 @@
 <RCC>
   <qresource>
+    <file>assets/icons/edit.svg</file>
     <file>assets/icons/check.svg</file>
     <file>assets/icons/x.svg</file>
     <file>assets/loading.gif</file>
