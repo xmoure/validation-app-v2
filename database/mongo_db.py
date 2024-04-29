@@ -48,12 +48,13 @@ class MongoDB:
                     "_id": 1,
                     "match_id": 1,
                     "source": 1,
-                    "total_moves": 1,
+                    "total_moves": {
+                        "$ifNull": [{"$size": "$moves"}, 0]
+                    },
                     "material": 1
                 }
             }
         ])
-
 
 
     def find_match_by_id_and_moves_not_validated(self, doc_id,):
@@ -95,6 +96,15 @@ class MongoDB:
 
         fen_changed = new_fen != starting_fen
 
+        update_fields = {
+            'moves.$.verified': True,
+            'moves.$.fen': new_fen
+        }
+
+        # only add the incorrect_fen field if the
+        if fen_changed:
+            update_fields['moves.$.incorrect_fen'] = starting_fen
+
         # Update the move's verified status and fen where the move id matches
         update_result = matches_collection.update_one(
             {
@@ -102,12 +112,7 @@ class MongoDB:
                 'moves._id': move_oid
             },
             {
-                '$set': {
-                    'moves.$.verified': True,
-                    'moves.$.fen': new_fen,
-                    'moves.$.fen_corrected': fen_changed,
-                    'moves.$.initial_fen': starting_fen
-                }
+                '$set': update_fields
             }
         )
         return update_result.matched_count, update_result.modified_count
@@ -125,7 +130,6 @@ class MongoDB:
             {"$set": {"material": material}}
         )
         return result.matched_count, result.modified_count
-
 
 
 mongo_db_instance = MongoDB()

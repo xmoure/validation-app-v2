@@ -101,8 +101,9 @@ class ValidationWindowForm(QWidget, ValidationWindow):
             self.current_move = self.match['moves'][self.current_image_index]
             # Request the DataFetcher to fetch the next image
             self.data_fetcher.fetch_next_image(self.current_move)
-            self.current_fen = self.current_move['fen']
-            self.starting_fen = self.current_move['fen']
+            fen = self.get_fen_base(self.current_move['fen'])
+            self.current_fen = fen
+            self.starting_fen = fen
             self.update_fen_label(self.current_fen)
             self.set_chess_game(self.current_fen)
             self.update_image_count_label()
@@ -135,7 +136,7 @@ class ValidationWindowForm(QWidget, ValidationWindow):
         self.hide_loading()
         self.match = match_data
         self.current_move = self.match['moves'][self.current_image_index]
-        fen = self.current_move['fen']
+        fen = fen = self.get_fen_base(self.current_move['fen'])
         self.starting_fen = fen
         self.set_chess_game(fen)
         self.on_image_fetched(image_data)
