@@ -57,7 +57,7 @@ class MongoDB:
         ])
 
 
-    def find_match_by_id_and_moves_not_validated(self, doc_id,):
+    def find_match_by_id_and_moves_not_validated(self, doc_id):
         matches_collection = self.db['matches']
         try:
             doc_id = ObjectId(doc_id)
@@ -66,6 +66,7 @@ class MongoDB:
         pipeline = [
             { "$match": { "_id": doc_id } },
             { "$project": {
+                "orientation": 1,
                 "moves": {
                     "$filter": {
                         "input": "$moves",

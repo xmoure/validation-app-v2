@@ -2,7 +2,7 @@ import os
 import chess
 from PySide6.QtCore import Qt, Signal, QSize, QUrl
 from PySide6.QtWidgets import QWidget, QMessageBox, QLabel, QSizePolicy, QApplication
-from PySide6.QtGui import QPixmap, QMovie, QIcon, QDesktopServices
+from PySide6.QtGui import QPixmap, QMovie, QIcon, QDesktopServices, QTransform
 from views.validation_window_ui import ValidationWindow
 from chess_game.chessboard import Chessboard
 from database.mongo_db import mongo_db_instance
@@ -36,11 +36,36 @@ class ValidationWindowForm(QWidget, ValidationWindow):
         self.save_validation_btn.clicked.connect(self.on_validate)
         self.chess_img_label.clicked.connect(self.open_image_with_os_application)
         self.start_data_fetching(match_id)
+        self.current_image_orientation = ''
+        self.rotation_angle = 0
+        self.rotate_image_btn.clicked.connect(self.rotate_image)
 
     def closeEvent(self, event):
         self.main_window.show()
         self.main_window.load_matches()
         event.accept()
+
+    def rotate_image(self):
+        # Increment the rotation angle by 90 degrees
+        self.rotation_angle = (self.rotation_angle + 90) % 360
+        # Update the image with the new rotation
+        self.apply_image_rotation()
+
+    def apply_image_rotation(self):
+        if not self.current_image_data:
+            return
+
+        pixmap = QPixmap()
+        pixmap.loadFromData(self.current_image_data)
+
+        # Apply rotation
+        transform = QTransform()
+        transform.rotate(self.rotation_angle)
+        pixmap = pixmap.transformed(transform, Qt.SmoothTransformation)
+
+        # Set the rotated and scaled image
+        pixmap = pixmap.scaled(550, 600, Qt.KeepAspectRatio)
+        self.chess_img_label.setPixmap(pixmap)
 
     def set_chess_game(self, fen):
         self.board = chess.Board(fen)
@@ -112,6 +137,7 @@ class ValidationWindowForm(QWidget, ValidationWindow):
 
     def on_image_fetched(self, image_data):
         self.current_image_data = image_data
+        self.rotation_angle = 0
         pixmap = QPixmap()
         pixmap.loadFromData(image_data)
         pixmap = pixmap.scaled(550, 600, Qt.KeepAspectRatio)
@@ -137,6 +163,7 @@ class ValidationWindowForm(QWidget, ValidationWindow):
         self.match = match_data
         self.current_move = self.match['moves'][self.current_image_index]
         fen = fen = self.get_fen_base(self.current_move['fen'])
+        self.current_image_orientation = self.match['orientation']
         self.starting_fen = fen
         self.set_chess_game(fen)
         self.on_image_fetched(image_data)

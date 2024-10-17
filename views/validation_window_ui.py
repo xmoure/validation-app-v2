@@ -121,6 +121,43 @@ class ValidationWindow(object):
 
         self.verticalLayout_2.addWidget(self.image_text_label)
 
+        self.rotate_img_frame = QFrame(self.image_frame)
+        self.rotate_img_frame.setObjectName(u"rotate_img_frame")
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.rotate_img_frame.sizePolicy().hasHeightForWidth())
+        self.rotate_img_frame.setSizePolicy(sizePolicy)
+        self.rotate_img_frame.setMaximumSize(QSize(16777215, 45))
+        self.rotate_img_frame.setLayoutDirection(Qt.RightToLeft)
+        self.rotate_img_frame.setFrameShape(QFrame.NoFrame)
+        self.rotate_img_frame.setFrameShadow(QFrame.Plain)
+        self.horizontalLayout_5 = QHBoxLayout(self.rotate_img_frame)
+        self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
+        self.horizontalLayout_5.setContentsMargins(0, 0, 0, 0)
+        self.rotate_image_btn = QPushButton(self.rotate_img_frame)
+        self.rotate_image_btn.setObjectName(u"rotate_image_btn")
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.rotate_image_btn.sizePolicy().hasHeightForWidth())
+        self.rotate_image_btn.setSizePolicy(sizePolicy1)
+        self.rotate_image_btn.setMaximumSize(QSize(100, 16777215))
+        self.rotate_image_btn.setLayoutDirection(Qt.LeftToRight)
+        self.rotate_image_btn.setStyleSheet(u"QPushButton{\n"
+"	background-color : #235784;\n"
+"	color: white;\n"
+"    padding: 5px 10px;\n"
+"    border-radius: 4px;\n"
+"	outline: none;\n"
+"}\n"
+"QPushButton::hover {background-color : #40a8c4};")
+
+        self.horizontalLayout_5.addWidget(self.rotate_image_btn)
+
+
+        self.verticalLayout_2.addWidget(self.rotate_img_frame)
+
         self.chess_img_label = ClickableLabel(self.image_frame)
         self.chess_img_label.setObjectName(u"chess_img_label")
         self.chess_img_label.setMinimumSize(QSize(300, 300))
@@ -160,15 +197,16 @@ class ValidationWindow(object):
 
         self.chess_graphic_view = QGraphicsView(self.board_frame)
         self.chess_graphic_view.setObjectName(u"chess_graphic_view")
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.chess_graphic_view.sizePolicy().hasHeightForWidth())
-        self.chess_graphic_view.setSizePolicy(sizePolicy)
+        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        sizePolicy2.setHorizontalStretch(0)
+        sizePolicy2.setVerticalStretch(0)
+        sizePolicy2.setHeightForWidth(self.chess_graphic_view.sizePolicy().hasHeightForWidth())
+        self.chess_graphic_view.setSizePolicy(sizePolicy2)
         self.chess_graphic_view.setMinimumSize(QSize(300, 300))
         self.chess_graphic_view.setMaximumSize(QSize(1200, 16777215))
         self.chess_graphic_view.setFont(font)
         self.chess_graphic_view.setFrameShape(QFrame.NoFrame)
+        self.chess_graphic_view.setFrameShadow(QFrame.Sunken)
 
         self.verticalLayout_4.addWidget(self.chess_graphic_view)
 
@@ -282,6 +320,7 @@ class ValidationWindow(object):
         ValidationWindow.setWindowTitle(QCoreApplication.translate("ValidationWindow", u"Form", None))
         self.count_images_label.setText(QCoreApplication.translate("ValidationWindow", u"One image out of 100", None))
         self.image_text_label.setText(QCoreApplication.translate("ValidationWindow", u"Image", None))
+        self.rotate_image_btn.setText(QCoreApplication.translate("ValidationWindow", u"Rotate Image", None))
         self.chess_img_label.setText("")
         self.move_pieces_label.setText(QCoreApplication.translate("ValidationWindow", u"Move the pieces to generate new fen", None))
         self.generated_fen_label.setText(QCoreApplication.translate("ValidationWindow", u"Generated FEN: ", None))
